@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Family Finances</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f9; --surface: #ffffff; --ink: #191919; --ink-2: #666666;
+  --grid: #e7e7e7; --axis: #c2c2c2; --ring: rgba(11,11,11,0.10);
+  --s1: #257de0; --s2: #f47230; --s3: #00b894; --s4: #f2a600;
+  --s4-ink: #0b0b0b; --good: #006c10; --bad: #c22f30; --wash: rgba(37,125,224,0.08);
+  --flag: #fbb315;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #0b0b0b; --surface: #191919; --ink: #efefef; --ink-2: #9c9c9c;
+    --grid: #303030; --axis: #474747; --ring: rgba(255,255,255,0.10);
+    --s1: #338ced; --s2: #e76624; --s3: #00a888; --s4: #d28e05;
+    --good: #53c556; --bad: #eb6263; --wash: rgba(51,140,237,0.12);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0b0b0b; --surface: #191919; --ink: #efefef; --ink-2: #9c9c9c;
+  --grid: #303030; --axis: #474747; --ring: rgba(255,255,255,0.10);
+  --s1: #338ced; --s2: #e76624; --s3: #00a888; --s4: #d28e05;
+  --good: #53c556; --bad: #eb6263; --wash: rgba(51,140,237,0.12);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--page); color: var(--ink);
+  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 980px; margin: 0 auto; padding: 16px 16px 48px; }
+h1 { font-size: 20px; margin: 0; font-weight: 650; }
+h2 { font-size: 15px; margin: 0 0 2px; font-weight: 600; }
+.sub { color: var(--ink-2); font-size: 13px; }
+.card { background: var(--surface); border: 1px solid var(--ring); border-radius: 12px; padding: 16px; margin-top: 12px; }
+.row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.spread { justify-content: space-between; }
+select, input, button { font: inherit; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--axis); border-radius: 8px; padding: 6px 10px; }
+button { cursor: pointer; }
+button.link { border: 0; background: none; color: var(--ink-2); padding: 4px; text-decoration: underline; }
+.tiles { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 12px; margin-top: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--ring); border-radius: 12px; padding: 14px 16px; }
+.tile .label { color: var(--ink-2); font-size: 13px; }
+.tile .value { font-size: 26px; font-weight: 620; margin-top: 2px; }
+.tile.hero .value { font-size: 48px; line-height: 1.05; }
+.tile .delta { font-size: 13px; color: var(--ink-2); margin-top: 2px; }
+.up-bad { color: var(--bad); } .down-good { color: var(--good); }
+@media (max-width: 720px) {
+  .tiles { grid-template-columns: 1fr 1fr; }
+  .tile.hero { grid-column: 1 / -1; }
+  .tile.hero .value { font-size: 44px; }
+}
+.legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--ink-2); margin-top: 8px; }
+.key { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.seg { display: flex; gap: 2px; height: 28px; margin-top: 12px; }
+.seg div { border-radius: 4px; color: #fff; font-size: 12px; font-weight: 600; padding: 0 8px;
+  display: flex; align-items: center; white-space: nowrap; overflow: visible; min-width: 0; }
+svg { display: block; width: 100%; overflow: visible; }
+svg text { fill: var(--ink-2); font-size: 11px; font-variant-numeric: tabular-nums; }
+svg .val { fill: var(--ink); font-size: 12px; }
+svg .name { fill: var(--ink); font-size: 13px; }
+.hit { cursor: pointer; }
+.hit:hover .hl, .hit.sel .hl { fill: var(--wash); }
+#tip { position: fixed; pointer-events: none; background: var(--surface); color: var(--ink);
+  border: 1px solid var(--ring); box-shadow: 0 4px 16px rgba(0,0,0,.12); border-radius: 8px;
+  padding: 8px 10px; font-size: 13px; display: none; z-index: 10; max-width: 260px; }
+#tip b { font-weight: 600; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+td, th { padding: 7px 4px; border-bottom: 1px solid var(--grid); text-align: left; vertical-align: top; }
+th { color: var(--ink-2); font-weight: 500; font-size: 13px; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pos { color: var(--good); }
+.pill { font-size: 12px; color: var(--ink-2); }
+.flag { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--flag); margin-right: 4px; }
+.scroll { max-height: 520px; overflow-y: auto; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } }
+#lock { max-width: 380px; margin: 18vh auto 0; padding: 0 16px; }
+#lock input[type=password] { width: 100%; margin: 12px 0 8px; padding: 10px 12px; }
+#lock button { width: 100%; padding: 10px; background: var(--s1); color: #fff; border: 0; }
+#err { color: var(--bad); min-height: 20px; font-size: 13px; }
+.hidden { display: none !important; }
+.note { font-size: 13px; color: var(--ink-2); margin-top: 8px; }
+</style>
+</head>
+<body>
+<div id="lock">
+  <h1>Family Finances</h1>
+  <p class="sub">Enter the passphrase to unlock. Data is decrypted only in this browser.</p>
+  <form id="lockform">
+    <input id="pw" type="password" autocomplete="current-password" placeholder="Passphrase" autofocus>
+    <label class="sub"><input id="remember" type="checkbox"> Remember on this device</label>
+    <div id="err"></div>
+    <button type="submit" id="unlockbtn">Unlock</button>
+  </form>
+</div>
+
+<main id="app" class="hidden">
+  <div class="row spread">
+    <div>
+      <h1>Family Finances</h1>
+      <div class="sub" id="updated"></div>
+    </div>
+    <div class="row">
+      <select id="period" aria-label="Period"></select>
+      <button class="link" id="logout">Lock</button>
+    </div>
+  </div>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="card">
+    <h2>Where spending goes, by type</h2>
+    <div class="sub" id="segsub"></div>
+    <div class="seg" id="seg" role="img"></div>
+    <div class="legend" id="seglegend"></div>
+  </div>
+
+  <div class="card">
+    <h2>Income and spending by month</h2>
+    <div class="sub">Tap a month to see its details</div>
+    <div class="legend">
+      <span><span class="key" style="background:var(--s1)"></span>Income</span>
+      <span><span class="key" style="background:var(--s2)"></span>Spending</span>
+    </div>
+    <div id="monthly"></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Spending by category</h2>
+      <div class="sub" id="catsub">Tap a category to see its trend and transactions</div>
+      <div id="cats"></div>
+    </div>
+    <div>
+      <div class="card">
+        <h2 id="trendtitle">Category trend</h2>
+        <div class="sub" id="trendsub">Pick a category on the left</div>
+        <div id="trend"></div>
+      </div>
+      <div class="card">
+        <h2>Top places</h2>
+        <div class="sub" id="topsub"></div>
+        <table id="top"></table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row spread">
+      <div><h2>Transactions</h2><div class="sub" id="txsub"></div></div>
+      <div class="row">
+        <input id="q" type="search" placeholder="Search" aria-label="Search transactions" style="width:150px">
+        <select id="catf" aria-label="Category"></select>
+      </div>
+    </div>
+    <div class="scroll"><table id="tx"></table></div>
+    <div class="note"><span class="flag"></span>No rule matched these yet. Tell the bot or run <code>python -m finance set</code> to fix them.</div>
+  </div>
+</main>
+<div id="tip"></div>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const eur0 = new Intl.NumberFormat("en-IE", {style: "currency", currency: "EUR", maximumFractionDigits: 0});
+const eur2 = new Intl.NumberFormat("en-IE", {style: "currency", currency: "EUR", minimumFractionDigits: 2});
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const mlabel = (m, long) => { const [y, mo] = m.split("-"); return MONTHS[+mo-1] + (long ? " " + y : ""); };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+  del(k) { try { localStorage.removeItem(k); } catch {} },
+};
+
+// ------------------------------------------------------------------ unlock
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function decrypt(blob, pw) {
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveKey"]);
+  const key = await crypto.subtle.deriveKey({name: "PBKDF2", salt: b64(blob.salt), iterations: blob.iter, hash: "SHA-256"},
+    base, {name: "AES-GCM", length: 256}, false, ["decrypt"]);
+  const plain = await crypto.subtle.decrypt({name: "AES-GCM", iv: b64(blob.iv)}, key, b64(blob.ct));
+  return JSON.parse(new TextDecoder().decode(plain));
+}
+let BLOB;
+async function unlock(pw, remember) {
+  $("#err").textContent = ""; $("#unlockbtn").textContent = "Unlocking…";
+  try {
+    BLOB = BLOB || await (await fetch("data.enc.json", {cache: "no-store"})).json();
+    const data = await decrypt(BLOB, pw);
+    if (remember) store.set("ff-pw", pw);
+    $("#lock").classList.add("hidden"); $("#app").classList.remove("hidden");
+    start(data);
+  } catch (e) {
+    store.del("ff-pw");
+    $("#err").textContent = e.name === "OperationError" ? "Wrong passphrase." : "Could not load data: " + e.message;
+  } finally { $("#unlockbtn").textContent = "Unlock"; }
+}
+$("#lockform").addEventListener("submit", e => { e.preventDefault(); unlock($("#pw").value, $("#remember").checked); });
+$("#logout").addEventListener("click", () => { store.del("ff-pw"); location.reload(); });
+const saved = store.get("ff-pw"); if (saved) unlock(saved, true);
+
+// ------------------------------------------------------------------ tooltip
+const tip = $("#tip");
+function showTip(ev, html) {
+  tip.innerHTML = html; tip.style.display = "block";
+  const r = tip.getBoundingClientRect();
+  let x = ev.clientX + 14, y = ev.clientY + 14;
+  if (x + r.width > innerWidth - 8) x = ev.clientX - r.width - 14;
+  if (y + r.height > innerHeight - 8) y = ev.clientY - r.height - 14;
+  tip.style.left = Math.max(8, x) + "px"; tip.style.top = Math.max(8, y) + "px";
+}
+const hideTip = () => tip.style.display = "none";
+document.addEventListener("scroll", hideTip, {passive: true});
+
+// ------------------------------------------------------------------ helpers
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs = {}, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (parent) parent.appendChild(e); return e;
+}
+// bar with 4px rounded data end, square at the baseline
+function colPath(x, y, w, h) { const r = Math.min(4, w / 2, h); return `M${x},${y+h}V${y+r}Q${x},${y} ${x+r},${y}H${x+w-r}Q${x+w},${y} ${x+w},${y+r}V${y+h}Z`; }
+function rowPath(x, y, w, h) { const r = Math.min(4, h / 2, w); return `M${x},${y}H${x+w-r}Q${x+w},${y} ${x+w},${y+r}V${y+h-r}Q${x+w},${y+h} ${x+w-r},${y+h}H${x}Z`; }
+function niceMax(v) { if (v <= 0) return 1; const p = 10 ** Math.floor(Math.log10(v)); for (const m of [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10]) if (m * p >= v) return m * p; }
+const tick = v => v >= 10000 ? (v / 1000) + "K" : v.toLocaleString("en-IE");
+
+// ------------------------------------------------------------------ state
+let D, months, complete, state = {period: "avg", cat: null};
+const GROUP_COLORS = ["--s1", "--s2", "--s3", "--s4"];
+
+function start(data) {
+  D = data;
+  D.txns.forEach(t => t.mo = t.p || t.d.slice(0, 7));
+  const first = D.txns.reduce((a, t) => t.mo < a ? t.mo : a, "9999");
+  const last = D.last_date.slice(0, 7);
+  months = []; for (let m = first; m <= last; m = nextMonth(m)) months.push(m);
+  const lastDay = new Date(+last.slice(0, 4), +last.slice(5), 0).getDate();
+  const partial = +D.last_date.slice(8) < lastDay;
+  complete = partial ? months.slice(0, -1) : months;
+  $("#updated").textContent = `Data through ${fmtDate(D.last_date)} · updated ${fmtDate(D.generated.slice(0, 10))}`;
+  const sel = $("#period");
+  sel.innerHTML = `<option value="avg">Monthly average (${mlabel(complete[0])}–${mlabel(complete.at(-1))})</option>` +
+    months.slice().reverse().map(m => `<option value="${m}">${mlabel(m, true)}${partial && m === last ? " (so far)" : ""}</option>`).join("");
+  const p = store.get("ff-period"); if (p && [...sel.options].some(o => o.value === p)) state.period = p;
+  sel.value = state.period;
+  sel.onchange = () => { state.period = sel.value; store.set("ff-period", sel.value); render(); };
+  $("#q").oninput = renderTx; $("#catf").onchange = () => { state.cat = $("#catf").value || null; render(); };
+  let w = innerWidth; addEventListener("resize", () => { if (innerWidth !== w) { w = innerWidth; render(); } });
+  render();
+}
+const nextMonth = m => { let [y, mo] = m.split("-").map(Number); mo++; if (mo > 12) { mo = 1; y++; } return `${y}-${String(mo).padStart(2, "0")}`; };
+const fmtDate = s => { const [y, m, d] = s.split("-"); return `${+d} ${MONTHS[+m-1]} ${y}`; };
+
+function totals(ms) {
+  const set = new Set(ms); let inc = 0, sp = 0; const cat = {}, merch = {};
+  for (const t of D.txns) {
+    if (!set.has(t.mo)) continue;
+    if (t.k === "income") inc += t.a;
+    else if (t.k === "expense") {
+      sp -= t.a; cat[t.c] = (cat[t.c] || 0) - t.a;
+      merch[t.m] = merch[t.m] || {v: 0, n: 0, c: t.c}; merch[t.m].v -= t.a; merch[t.m].n++;
+    }
+  }
+  const n = ms.length || 1;
+  return {inc, sp, cat, merch, n};
+}
+function periodMonths() { return state.period === "avg" ? complete : [state.period]; }
+function periodText() { return state.period === "avg" ? `per month, ${mlabel(complete[0])}–${mlabel(complete.at(-1))}` : mlabel(state.period, true); }
+
+// ------------------------------------------------------------------ render
+function render() {
+  const ms = periodMonths(), T = totals(ms), div = state.period === "avg" ? T.n : 1;
+  renderTiles(T, div); renderSeg(T, div); renderMonthly(); renderCats(T, div); renderTrend(); renderTop(T, div); renderTx();
+}
+
+function renderTiles(T, div) {
+  const inc = T.inc / div, sp = T.sp / div, saved = inc - sp, rate = inc > 0 ? saved / inc : 0;
+  let delta = "";
+  if (state.period !== "avg") {
+    const i = months.indexOf(state.period);
+    if (i > 0) {
+      const prev = totals([months[i - 1]]).sp, d = sp - prev;
+      delta = `<div class="delta ${d > 0 ? "up-bad" : "down-good"}">${d > 0 ? "▲" : "▼"} ${eur0.format(Math.abs(d))} vs ${mlabel(months[i - 1])}</div>`;
+    }
+  } else delta = `<div class="delta">average of ${T.n} complete months</div>`;
+  const label = state.period === "avg" ? " per month" : "";
+  $("#tiles").innerHTML = `
+    <div class="tile hero"><div class="label">Spent${label}</div><div class="value">${eur0.format(sp)}</div>${delta}</div>
+    <div class="tile"><div class="label">Income${label}</div><div class="value">${eur0.format(inc)}</div></div>
+    <div class="tile"><div class="label">Saved${label}</div><div class="value ${saved < 0 ? "up-bad" : ""}">${eur0.format(saved)}</div></div>
+    <div class="tile"><div class="label">Savings rate</div><div class="value ${rate < 0 ? "up-bad" : ""}">${Math.round(rate * 100)}%</div></div>`;
+}
+
+function renderSeg(T, div) {
+  const groups = Object.entries(D.groups).map(([g, cats], i) => ({g, i, v: cats.reduce((s, c) => s + (T.cat[c] || 0), 0) / div}));
+  const known = new Set(Object.values(D.groups).flat());
+  const extra = Object.entries(T.cat).filter(([c]) => !known.has(c)).reduce((s, [, v]) => s + v, 0) / div;
+  if (extra) groups[groups.length - 1].v += extra;
+  const total = groups.reduce((s, g) => s + Math.max(0, g.v), 0) || 1;
+  $("#segsub").textContent = `${eur0.format(total)} ${periodText()}`;
+  const seg = $("#seg"); seg.innerHTML = "";
+  seg.setAttribute("aria-label", groups.map(g => `${g.g} ${eur0.format(g.v)}`).join(", "));
+  for (const g of groups) {
+    if (g.v <= 0) continue;
+    const d = document.createElement("div"), share = g.v / total;
+    d.style.flex = `${share} 1 0`; d.style.background = `var(${GROUP_COLORS[g.i]})`;
+    if (g.i === 3) d.style.color = "var(--s4-ink)";
+    d.textContent = share > 0.12 ? `${Math.round(share * 100)}%` : "";
+    d.onmousemove = ev => showTip(ev, `<b>${esc(g.g)}</b><br>${eur0.format(g.v)} · ${Math.round(share * 100)}%`);
+    d.onmouseleave = hideTip;
+    seg.appendChild(d);
+  }
+  $("#seglegend").innerHTML = groups.map(g => `<span><span class="key" style="background:var(${GROUP_COLORS[g.i]})"></span>${esc(g.g)} <b style="color:var(--ink)">${eur0.format(g.v)}</b></span>`).join("");
+}
+
+function renderMonthly() {
+  const host = $("#monthly"); host.innerHTML = "";
+  const W = host.clientWidth, H = 220, L = 44, B = 22, T0 = 8;
+  const data = months.map(m => ({m, ...totals([m])}));
+  const max = niceMax(Math.max(...data.map(d => Math.max(d.inc, d.sp))));
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, height: H, role: "img", "aria-label": "Income and spending by month"}, host);
+  const y = v => T0 + (H - T0 - B) * (1 - v / max);
+  for (let i = 0; i <= 4; i++) {
+    const v = max * i / 4;
+    el("line", {x1: L, x2: W, y1: y(v), y2: y(v), stroke: i ? "var(--grid)" : "var(--axis)", "stroke-width": 1}, svg);
+    el("text", {x: L - 6, y: y(v) + 4, "text-anchor": "end"}, svg).textContent = tick(v);
+  }
+  const band = (W - L) / data.length, bw = Math.min(24, (band * 0.72 - 2) / 2);
+  data.forEach((d, i) => {
+    const cx = L + band * i + band / 2;
+    const g = el("g", {class: "hit" + (state.period === d.m ? " sel" : "")}, svg);
+    el("rect", {class: "hl", x: cx - band / 2 + 1, y: T0, width: band - 2, height: H - T0 - B, fill: "transparent", rx: 4}, g);
+    if (d.inc > 0) el("path", {d: colPath(cx - bw - 1, y(d.inc), bw, y(0) - y(d.inc)), fill: "var(--s1)"}, g);
+    if (d.sp > 0) el("path", {d: colPath(cx + 1, y(d.sp), bw, y(0) - y(d.sp)), fill: "var(--s2)"}, g);
+    el("text", {x: cx, y: H - 6, "text-anchor": "middle"}, g).textContent = mlabel(d.m);
+    const net = d.inc - d.sp;
+    g.onmousemove = ev => showTip(ev, `<b>${mlabel(d.m, true)}</b><br>Income ${eur0.format(d.inc)}<br>Spending ${eur0.format(d.sp)}<br>${net >= 0 ? "Saved" : "Overspent"} ${eur0.format(Math.abs(net))}`);
+    g.onmouseleave = hideTip;
+    g.onclick = () => { state.period = state.period === d.m ? "avg" : d.m; $("#period").value = state.period; store.set("ff-period", state.period); render(); };
+  });
+}
+
+function renderCats(T, div) {
+  const host = $("#cats"); host.innerHTML = "";
+  const rows = Object.entries(T.cat).map(([c, v]) => ({c, v: v / div})).filter(r => Math.abs(r.v) >= 0.5).sort((a, b) => b.v - a.v);
+  const total = rows.reduce((s, r) => s + Math.max(0, r.v), 0) || 1;
+  const W = host.clientWidth, rh = 30, nameW = Math.min(150, W * 0.42), valW = 92, H = rows.length * rh;
+  const max = Math.max(...rows.map(r => r.v), 1);
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, height: H, role: "img", "aria-label": "Spending by category"}, host);
+  rows.forEach((r, i) => {
+    const yy = i * rh, g = el("g", {class: "hit" + (state.cat === r.c ? " sel" : "")}, svg);
+    el("rect", {class: "hl", x: 0, y: yy, width: W, height: rh, fill: "transparent", rx: 4}, g);
+    el("text", {class: "name", x: 4, y: yy + rh / 2 + 4}, g).textContent = r.c;
+    const bw = Math.max(1, (W - nameW - valW) * Math.max(0, r.v) / max);
+    el("path", {d: rowPath(nameW, yy + 8, bw, rh - 16), fill: "var(--s1)"}, g);
+    el("text", {class: "val", x: nameW + bw + 6, y: yy + rh / 2 + 4}, g).textContent = eur0.format(r.v);
+    g.onmousemove = ev => showTip(ev, `<b>${esc(r.c)}</b><br>${eur2.format(r.v)} ${state.period === "avg" ? "per month" : ""}<br>${Math.round(100 * r.v / total)}% of spending`);
+    g.onmouseleave = hideTip;
+    g.onclick = () => { state.cat = state.cat === r.c ? null : r.c; render(); };
+  });
+  $("#catsub").textContent = `${periodText()} · tap one for its trend`;
+}
+
+function renderTrend() {
+  const host = $("#trend"); host.innerHTML = "";
+  if (!state.cat) { $("#trendtitle").textContent = "Category trend"; $("#trendsub").textContent = "Pick a category to see it month by month"; return; }
+  $("#trendtitle").textContent = state.cat;
+  const data = months.map(m => ({m, v: D.txns.filter(t => t.mo === m && t.k === "expense" && t.c === state.cat).reduce((s, t) => s - t.a, 0)}));
+  const avg = complete.reduce((s, m) => s + data[months.indexOf(m)].v, 0) / (complete.length || 1);
+  $("#trendsub").textContent = `Average ${eur0.format(avg)} per month`;
+  const W = host.clientWidth, H = 160, L = 40, B = 22, T0 = 16;
+  const max = niceMax(Math.max(...data.map(d => d.v), 1));
+  const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, height: H, role: "img", "aria-label": `${state.cat} by month`}, host);
+  const y = v => T0 + (H - T0 - B) * (1 - Math.max(0, v) / max);
+  for (let i = 0; i <= 2; i++) {
+    const v = max * i / 2;
+    el("line", {x1: L, x2: W, y1: y(v), y2: y(v), stroke: i ? "var(--grid)" : "var(--axis)"}, svg);
+    el("text", {x: L - 6, y: y(v) + 4, "text-anchor": "end"}, svg).textContent = tick(v);
+  }
+  const band = (W - L) / data.length, bw = Math.min(24, band * 0.6);
+  let peak = data.reduce((a, d) => d.v > a.v ? d : a, data[0]);
+  data.forEach(d => {
+    const cx = L + band * months.indexOf(d.m) + band / 2, g = el("g", {class: "hit"}, svg);
+    el("rect", {class: "hl", x: cx - band / 2 + 1, y: T0, width: band - 2, height: H - T0 - B, fill: "transparent", rx: 4}, g);
+    if (d.v > 0) el("path", {d: colPath(cx - bw / 2, y(d.v), bw, y(0) - y(d.v)), fill: "var(--s1)"}, g);
+    if (d === peak && d.v > 0) el("text", {class: "val", x: cx, y: y(d.v) - 4, "text-anchor": "middle"}, g).textContent = eur0.format(d.v);
+    el("text", {x: cx, y: H - 6, "text-anchor": "middle"}, g).textContent = mlabel(d.m);
+    g.onmousemove = ev => showTip(ev, `<b>${mlabel(d.m, true)}</b><br>${esc(state.cat)} ${eur2.format(d.v)}`);
+    g.onmouseleave = hideTip;
+  });
+}
+
+function renderTop(T, div) {
+  let rows = Object.entries(T.merch).map(([m, o]) => ({m, ...o}));
+  if (state.cat) rows = rows.filter(r => r.c === state.cat);
+  rows = rows.sort((a, b) => b.v - a.v).slice(0, 8);
+  $("#topsub").textContent = (state.cat ? state.cat + " · " : "") + periodText();
+  $("#top").innerHTML = `<tr><th>Place</th><th class="num">Visits</th><th class="num">Spent</th></tr>` +
+    rows.map(r => `<tr><td>${esc(r.m)}<div class="pill">${esc(r.c)}</div></td><td class="num">${state.period === "avg" ? (r.n / div).toFixed(1) : r.n}</td><td class="num">${eur0.format(r.v / div)}</td></tr>`).join("");
+}
+
+function renderTx() {
+  const cats = [...new Set(D.txns.map(t => t.c))].sort();
+  const cf = $("#catf");
+  cf.innerHTML = `<option value="">All categories</option>` + cats.map(c => `<option${c === state.cat ? " selected" : ""}>${esc(c)}</option>`).join("");
+  const set = new Set(periodMonths()), q = $("#q").value.trim().toLowerCase();
+  const rows = D.txns.filter(t => set.has(t.mo) && (!state.cat || t.c === state.cat) &&
+    (!q || (t.m + " " + t.desc + " " + t.c).toLowerCase().includes(q)));
+  $("#txsub").textContent = `${rows.length} transactions · ${state.period === "avg" ? `${mlabel(complete[0])}–${mlabel(complete.at(-1))}` : mlabel(state.period, true)}${state.cat ? " · " + state.cat : ""}`;
+  $("#tx").innerHTML = `<tr><th>Date</th><th>Place</th><th class="num">Amount</th></tr>` + rows.map(t =>
+    `<tr title="${esc(t.desc)}"><td class="num" style="text-align:left">${+t.d.slice(8)} ${mlabel(t.mo)}</td>
+     <td>${t.r ? '<span class="flag" title="Needs a category"></span>' : ""}${esc(t.m)}<div class="pill">${esc(t.c)}${t.k === "transfer" ? " · not counted" : ""} · ${t.s === "credit" ? "credit card" : t.s}</div></td>
+     <td class="num ${t.a > 0 ? "pos" : ""}">${eur2.format(t.a)}</td></tr>`).join("");
+}
+</script>
+</body>
+</html>
